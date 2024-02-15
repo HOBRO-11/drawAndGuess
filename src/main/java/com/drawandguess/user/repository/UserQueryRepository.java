@@ -42,7 +42,7 @@ public class UserQueryRepository {
 
     }
 
-    public int findMaxGuest() {
+    public int findMaxGuestTag() {
         String jpql = "select MAX(up.tag)" +
                 "from UserProfile up " +
                 "where nickname = 'GUEST'";

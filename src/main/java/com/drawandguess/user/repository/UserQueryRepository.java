@@ -1,13 +1,17 @@
 package com.drawandguess.user.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.coyote.BadRequestException;
 import org.springframework.stereotype.Repository;
 
 import com.drawandguess.user.dto.NicknameTagDto;
+import com.drawandguess.user.entity.UserDislike;
+import com.drawandguess.user.entity.UserProfile;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
 import jakarta.persistence.PersistenceContext;
 
 @Repository
@@ -55,7 +59,7 @@ public class UserQueryRepository {
         return Integer.parseInt(result.get(0));
     }
 
-    //todo
+    // todo
     public void deleteUserDislikeUser(Long id, NicknameTagDto userNicknameTagDto) {
         String jpql = "delete from UserDislike ud " +
                 "where ud.userDislikeNickname = :nickname" +
@@ -69,6 +73,25 @@ public class UserQueryRepository {
                 .setParameter("tag", userNicknameTagDto.getTag())
                 .setParameter("id", id)
                 .executeUpdate();
+    }
+
+    public Optional<UserDislike> findByUserProfileDislikeUser(UserProfile userProfile, UserProfile dislikeUser) {
+        String jpql = "select ud " +
+                "from UserDislike ud " +
+                "where ud.userProfile.id = :userProfileId " +
+                "and " +
+                "ud.dislikeUser.id = :dislikeUserId ";
+
+        try {
+            UserDislike singleResult = em.createQuery(jpql, UserDislike.class)
+                    .setParameter("userProfileId", userProfile.getId())
+                    .setParameter("dislikeUserId", dislikeUser.getId())
+                    .getSingleResult();
+            return Optional.of(singleResult);
+        } catch (NoResultException e) {
+            return Optional.empty();
+        }
+
     }
 
 }

@@ -167,21 +167,21 @@ public class UserInfoProfileTest {
 
     @Test
     @Transactional
-    void deleteUser_Info_Profile_d_success(){
-    //given
-    UserProfile userProfile = new UserProfile("GUEST", findMaxGuestTag());
+    void deleteUser_Info_Profile_d_success() {
+        // given
+        UserProfile userProfile = new UserProfile("GUEST", findMaxGuestTag());
         UserInfo userInfo = new UserInfo("email", "pwd");
 
         userProfileRepository.save(userProfile);
         userInfo.setUserProfile(userProfile);
         userInfoRepository.save(userInfo);
 
-    //when
-    userInfoRepository.deleteById(1L);
+        // when
+        userInfoRepository.deleteById(1L);
 
-    //then
-    assertThat(userProfileRepository.findByNicknameAndTag("GUEST", "1")).isEmpty();
-    assertThat(userInfoRepository.findById(1L)).isEmpty();
+        // then
+        assertThat(userProfileRepository.findByNicknameAndTag("GUEST", "1")).isEmpty();
+        assertThat(userInfoRepository.findById(1L)).isEmpty();
     }
 
 }

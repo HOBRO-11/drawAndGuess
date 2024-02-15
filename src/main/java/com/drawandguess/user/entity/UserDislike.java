@@ -24,20 +24,27 @@ public class UserDislike  {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_Dislike_id")
-    private UserProfile userDislike;
+    private UserProfile dislikeUser;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_Profile_id")
     private UserProfile userProfile;
 
     @Builder
-	public UserDislike(String userDislikeNickname, String userDislikeTag, UserProfile userDislike,
+	public UserDislike(String userDislikeNickname, String userDislikeTag, UserProfile dislikeUser,
 			UserProfile userProfile) {
 		this.userDislikeNickname = userDislikeNickname;
 		this.userDislikeTag = userDislikeTag;
-		this.userDislike = userDislike;
+		this.dislikeUser = dislikeUser;
 		this.userProfile = userProfile;
 	}
+
+    public UserDislike(UserProfile userProfile, UserProfile dislikeUser){
+        this.userProfile = userProfile;
+        this.dislikeUser = dislikeUser;
+        this.userDislikeNickname = dislikeUser.getNickname();
+        this.userDislikeTag = dislikeUser.getTag();
+    }
 
     public void setUserDislikeNickname(String userDislikeNickname) {
         this.userDislikeNickname = userDislikeNickname;

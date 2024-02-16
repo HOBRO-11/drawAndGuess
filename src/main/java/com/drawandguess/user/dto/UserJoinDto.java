@@ -18,6 +18,4 @@ public class UserJoinDto {
     @NotNull
     private String  password;
 
-    @NotNull
-    private String  nickname;
 }

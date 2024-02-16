@@ -139,6 +139,55 @@ public class UserDislikeTest {
         assertThat(collects.contains("GUEST2")).isFalse();
     }
 
+    @Test
+    @Transactional
+    void deleteDislike_dislike_d_list_success() {
+        // given
+        UserProfile userProfile = new UserProfile("GUEST", findMaxGuestTag());
+        userProfileRepository.save(userProfile);
+
+        UserProfile dislikeUser1 = new UserProfile("GUEST", findMaxGuestTag());
+        userProfileRepository.save(dislikeUser1);
+
+        UserProfile dislikeUser2 = new UserProfile("GUEST", findMaxGuestTag());
+        userProfileRepository.save(dislikeUser2);
+
+        UserProfile dislikeUser3 = new UserProfile("GUEST", findMaxGuestTag());
+        userProfileRepository.save(dislikeUser3);
+
+        UserDislike userDislike1 = new UserDislike(userProfile, dislikeUser1);
+        userDislikeRepository.save(userDislike1);
+
+        UserDislike userDislike2 = new UserDislike(userProfile, dislikeUser2);
+        userDislikeRepository.save(userDislike2);
+
+        UserDislike userDislike3 = new UserDislike(userProfile, dislikeUser3);
+        userDislikeRepository.save(userDislike3);
+
+        List<UserProfile> dislikeUserProfiles = new ArrayList<>();
+        dislikeUserProfiles.add(dislikeUser2);
+        dislikeUserProfiles.add(dislikeUser3);
+
+        List<Long> wannaDislikeUserId = new ArrayList<>();
+        wannaDislikeUserId.add(dislikeUser2.getId());
+        wannaDislikeUserId.add(dislikeUser3.getId());
+
+        // when
+
+        List<UserDislike> findUserDislikes = userDislikeRepository.findByUserProfile(userProfile);
+
+        List<UserDislike> deleteUserDislikes = findUserDislikes.stream()
+                .filter(t -> wannaDislikeUserId.contains(t.getDislikeUser().getId())).collect(Collectors.toList());
+
+        if (deleteUserDislikes.size() > 0) {
+            userDislikeRepository.deleteAll(deleteUserDislikes);
+        }
+        
+        //then
+        assertThat(userDislikeRepository.findAll().get(0).getUserDislikeTag()).isEqualTo("2");
+
+    }
+
     private String findMaxGuestTag() {
         int maxGuestTag = userQueryRepository.findMaxGuestTag();
         return String.valueOf(maxGuestTag + 1);

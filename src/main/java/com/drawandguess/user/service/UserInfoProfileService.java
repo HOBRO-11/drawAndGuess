@@ -33,26 +33,31 @@ public class UserInfoProfileService {
     @Autowired
     UserQueryRepository userQueryRepository;
 
-    // security를 적용 전
-    //비밀번호 관련 추가 스펙 변경이 있을 수 있음
+    final static private String GUEST_NICKNAME = "GUEST";
+    final static private long DATE_OF_MODIFICATION_AVAILABLE = 90L;
+
     @Transactional
     public void join(@Valid @ModelAttribute UserJoinDto userJoin) throws BadRequestException {
-        String mail = userJoin.getMail();
-        String password = userJoin.getPassword();
+        
+        validationEmail(userJoin);
+        
+        UserProfile guestProfile = getGuestUserProfile();
+        userProfileRepository.save(guestProfile);
+        UserInfo guestInfo = new UserInfo(userJoin);
+        guestInfo.setUserProfile(guestProfile);
+        userInfoRepository.save(guestInfo);
+    }
 
-        UserProfile userProfile = new UserProfile("GUEST", findMaxGuestTag());
-        UserInfo userInfo = new UserInfo(mail, password);
+    private @NonNull UserProfile getGuestUserProfile() {
+        UserProfile userProfile = new UserProfile(GUEST_NICKNAME, findMaxGuestTag());
+        return userProfile;
+    }
 
-        //todo
-        //password 검증코드 집어 넣기
-        Optional<UserInfo> findByEmail = userInfoRepository.findByEmail(mail);
+    private void validationEmail(UserJoinDto userJoinDto) throws BadRequestException {
+        Optional<UserInfo> findByEmail = userInfoRepository.findByEmail(userJoinDto.getMail());
         if (findByEmail.isPresent()) {
             throw new BadRequestException("이미 존재하는 email입니다.");
         }
-
-        userProfileRepository.save(userProfile);
-        userInfo.setUserProfile(userProfile);
-        userInfoRepository.save(userInfo);
     }
 
     private String findMaxGuestTag() {
@@ -60,85 +65,89 @@ public class UserInfoProfileService {
         return String.valueOf(maxGuestTag + 1);
     }
 
-    //비밀번호 관련 추가 스펙 변경이 있을 수 있음
     @Transactional
-    void changePassword(@NonNull Long id ,String password) throws BadRequestException {
+    void changePassword(@NonNull Long id, String password) throws BadRequestException {
 
         Optional<UserInfo> findUserInfo = userInfoRepository.findById(id);
+
+        validationExistUser(findUserInfo);
+
+        findUserInfo.get().setPassword(password);
+    }
+
+    private void validationExistUser(Optional<UserInfo> findUserInfo) throws BadRequestException {
         if (findUserInfo.isEmpty()) {
             throw new BadRequestException("해당 유저는 존재하지 않습니다.");
         }
-        findUserInfo.get().setPassword(password);
     }
 
     @Transactional
     void changeNicknameAndTag(@NonNull Long id, NicknameTagDto nicknameTagDto) throws BadRequestException {
-        
+
         String nickname = nicknameTagDto.getNickname();
         String tag = nicknameTagDto.getTag();
 
-        UserProfile findInfo = userProfileRepository.findById(id).orElseThrow(() -> new BadRequestException("해당 유저는 존재하지 않습니다."));
+        UserProfile findUserProfile = userProfileRepository.findById(id)
+                .orElseThrow(() -> new BadRequestException("해당 유저는 존재하지 않습니다."));
 
-        boolean isPossible = isThisNicknamePossible(nickname);
-        if (!isPossible) {
-            throw new BadRequestException("Guest로 시작하는 nickname 또는 5글자 이하의 nickname 사용할 수 없습니다.");
-        }
+        validationNickname(nicknameTagDto);
+        validationDurationModified(findUserProfile);
+        validationTag(nicknameTagDto);
 
-        boolean canModified = canModified(findInfo);
-        if (!canModified) {
-            throw new BadRequestException("변경일로부터 90일 이후에 변경 가능합니다.");
-        }
+        findUserProfile.setNickname(nickname);
+        findUserProfile.setTag(tag);
+
+    }
+
+    private void validationTag(NicknameTagDto nicknameTagDto) throws BadRequestException {
+
+        String nickname = nicknameTagDto.getNickname();
+        String tag = nicknameTagDto.getTag();
 
         Optional<UserProfile> findUserProfile = userProfileRepository.findByNicknameAndTag(nickname, tag);
         if (findUserProfile.isPresent()) {
             throw new BadRequestException("이미 존재하는 tag입니다.");
         }
 
-        findInfo.setNickname(nickname);
-        findInfo.setTag(tag);
-
     }
 
-    private boolean canModified(UserProfile userProfile) {
+    private void validationDurationModified(UserProfile userProfile) throws BadRequestException {
 
         String nickname = userProfile.getNickname();
         LocalDateTime lastModifiedAt = userProfile.getLastModifiedAt();
         Long duration = Duration.between(lastModifiedAt, LocalDateTime.now()).toDays();
 
         if (nickname.equals("GUEST")) {
-            return true;
+            return;
         }
 
-        if (duration < 90L) {
-            return false;
+        if (duration < DATE_OF_MODIFICATION_AVAILABLE) {
+            throw new BadRequestException(
+                    "변경일로부터 90일 이후에 변경이 가능합니다. " + (DATE_OF_MODIFICATION_AVAILABLE - duration) + "일 이후에 변경 가능합니다.");
         }
 
-        return true;
     }
 
-    private boolean isThisNicknamePossible(String newNickname) {
+    private void validationNickname(NicknameTagDto nicknameTagDto) throws BadRequestException {
 
-        char[] nickname = newNickname.toCharArray();
+        char[] nickname = nicknameTagDto.getNickname().toCharArray();
         char[] capitalGuest = { 'G', 'U', 'E', 'S', 'T' };
         char[] subGuest = { 'g', 'u', 'e', 's', 't' };
-        int count = 0;
 
         if (nickname.length <= 5) {
-            return false;
+            throw new BadRequestException("5글자 이하의 닉네임은 사용할 수 없습니다.");
         }
 
         for (int i = 0; i < 5; i++) {
             if ((nickname[i] == capitalGuest[i]) || (nickname[i] == subGuest[i])) {
-                count += 1;
             } else {
-                break;
+                return;
             }
         }
-
-        return count != 5;
+        throw new BadRequestException("Guest로 시작하는 닉네임은 사용할 수 없습니다.");
     }
 
-    public void deleteUser(@NonNull Long id){
+    public void deleteUser(@NonNull Long id) {
         userInfoRepository.deleteById(id);
     }
 }

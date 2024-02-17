@@ -1,6 +1,7 @@
 package com.drawandguess.user.entity;
 
 import com.drawandguess.model.BaseEntity;
+import com.drawandguess.user.dto.UserJoinDto;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -27,9 +28,9 @@ public class UserInfo extends BaseEntity {
         this.userProfile = userProfile;
     }
 
-    public UserInfo(String email, String password) {
-        this.email = email;
-        this.password = password;
+    public UserInfo(UserJoinDto userJoinDto) {
+        this.email = userJoinDto.getMail();
+        this.password = userJoinDto.getPassword();
     }
 
     public void setPassword(String password) {

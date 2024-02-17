@@ -1,8 +1,7 @@
 package com.drawandguess.user.service;
 
-
-
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -32,7 +31,7 @@ public class UserDislikeService {
     UserQueryRepository userQueryRepository;
 
     @Transactional
-    void addDislike_dislike_cu_success(@NonNull Long id, @NonNull Long dislikeId) throws BadRequestException {
+    void addDislike(@NonNull Long id, @NonNull Long dislikeId) throws BadRequestException {
         // given
 
         UserProfile findUserProfile = userProfileRepository.findById(id)
@@ -43,40 +42,44 @@ public class UserDislikeService {
         // when
         Optional<UserDislike> findUserDislike = userDislikeRepository.findByUserProfileAndDislikeUser(findUserProfile,
                 wannaDislikeUser);
+
         if (findUserDislike.isPresent()) {
             UserDislike userDislike = findUserDislike.get();
             userDislike.setUserDislikeNickname(wannaDislikeUser.getNickname());
             userDislike.setUserDislikeTag(wannaDislikeUser.getTag());
-        } else {
-            UserDislike userDislike = new UserDislike(findUserProfile, wannaDislikeUser);
-            userDislikeRepository.save(userDislike);
+            return;
         }
+        UserDislike userDislike = new UserDislike(findUserProfile, wannaDislikeUser);
+        userDislikeRepository.save(userDislike);
     }
 
     @Transactional
-    void deleteDislike_dislike_d_success(@NonNull Long id, @NonNull Long ...dislikeUserId) {
+    void deleteDislike(long id, long... dislikeUserId) {
 
-        // when
         UserProfile wannaFindUser = new UserProfile();
         wannaFindUser.setId(id);
         List<UserDislike> findUserDislikes = userDislikeRepository.findByUserProfile(wannaFindUser);
 
-        // dislikeUserId
+        List<UserDislike> deleteUserDislikes = wannaDeleteUserDislikes(findUserDislikes, dislikeUserId);
+
+        if(!deleteUserDislikes.isEmpty())
+        userDislikeRepository.deleteAll(deleteUserDislikes);
+    }
+
+    private List<UserDislike> wannaDeleteUserDislikes(List<UserDislike> userDislikes, long[] dislikeUserIds) {
+
+        if (userDislikes.size() == dislikeUserIds.length) {
+            return userDislikes;
+        }
+
         List<Long> wannaDislikeUserId = new ArrayList<>();
-        
-        for (Long di : dislikeUserId) {
+
+        for (long di : dislikeUserIds) {
             wannaDislikeUserId.add(di);
         }
 
-        List<UserDislike> deleteUserDislikes = findUserDislikes.stream()
+        return userDislikes.stream()
                 .filter(t -> wannaDislikeUserId.contains(t.getDislikeUser().getId())).collect(Collectors.toList());
-
-        if (deleteUserDislikes.size() > 0) {
-            userDislikeRepository.deleteAll(deleteUserDislikes);
-        }
-
     }
-
-    
 
 }

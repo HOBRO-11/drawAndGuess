@@ -94,13 +94,13 @@ public class UserInfoProfileTest {
 
         userProfileRepository.save(userProfile);
         userInfo.setUserProfile(userProfile);
-        userInfoRepository.save(userInfo);
+        UserInfo savedUser = userInfoRepository.save(userInfo);
 
         String nickname = "nickname";
         String tag = "tag";
 
-        // when
-        UserProfile save = userProfileRepository.findById(1L).get();
+        // when 
+        UserProfile save = userProfileRepository.findById(savedUser.getId()).get();
 
         boolean isPossible = isThisNicknamePossible(nickname);
         if (!isPossible) {

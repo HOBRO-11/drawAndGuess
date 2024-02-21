@@ -12,7 +12,6 @@ import com.drawandguess.user.entity.UserProfile;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
-import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 
 @Repository

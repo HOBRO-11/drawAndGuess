@@ -36,9 +36,13 @@ public class MessageProducer {
     }
 
     public void produce() {
-        Map<String, String> map = new HashMap<>();
-        map.put("sender", "producer");
-        map.put("content", "content1");
-        redisTemplate.opsForStream().add("s1", map);
+
+        for (int i = 0; i < 5; i++) {
+            
+            Map<String, String> map = new HashMap<>();
+            map.put("sender", "producer" + i);
+            map.put("content", "content" + i);
+            redisTemplate.opsForStream().add("s1", map);
+        }
     }
 }

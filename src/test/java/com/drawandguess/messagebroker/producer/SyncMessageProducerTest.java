@@ -3,26 +3,26 @@ package com.drawandguess.messagebroker.producer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.redis.core.RedisTemplate;
 
-import com.drawandguess.messagebroker.consumer.MessageConsumer;
+import com.drawandguess.messagebroker.consumer.SyncMessageConsumer;
 
 @SpringBootTest
-public class MessageProducerTest {
+public class SyncMessageProducerTest {
 
     @Autowired
     MessageProducer messageProducer;
 
     @Autowired
-    MessageConsumer messageConsumer;
+    SyncMessageConsumer messageConsumer;
     
     @Test
     void testProduce() throws InterruptedException {
         messageProducer.streamStart();
-        messageConsumer.createGroup();
+        messageConsumer.createGroup("s1", "g1");
         Thread.sleep(1000L);
         messageProducer.produce();
         Thread.sleep(1000L);
-        messageConsumer.consume();
+        messageConsumer.syncConsume("s1","g1","u1");
+        messageConsumer.syncRead("s1");
     }
 }

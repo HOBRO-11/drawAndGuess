@@ -15,10 +15,10 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.stream.Consumer;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
-import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.data.redis.connection.stream.StreamOffset;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
+import org.springframework.data.redis.stream.StreamMessageListenerContainer.StreamMessageListenerContainerOptions;
 import org.springframework.data.redis.stream.Subscription;
 
 import lombok.extern.slf4j.Slf4j;
@@ -27,46 +27,46 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AsyncMessageProducerTest {
 
-    @Autowired
-    RedisConnectionFactory testConnectionFactory;
+        private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(2);
 
-    @Autowired
-    StreamMessageListenerContainer<String , MapRecord<String , String , String >> container;
+        @Autowired
+        RedisConnectionFactory connectionFactory;
 
-    @Autowired
-    StringRedisTemplate redisTemplate;
+        @Autowired
+        StringRedisTemplate redisTemplate;
 
-    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(2);
+        @BeforeEach
+        void before() {
+                RedisConnection connection = connectionFactory.getConnection();
+                connection.flushDb();
+                connection.close();
 
-    @BeforeEach
-    void before() {
+        }
 
-        redisTemplate.afterPropertiesSet();
-        RedisConnection connection = testConnectionFactory.getConnection();
-        connection.flushDb();
-        connection.close();
-    }
+        @Test
+        void AsyncMessageBrokerTest() throws InterruptedException {
+                StreamMessageListenerContainerOptions<String, MapRecord<String, String, String>> containerOptions = StreamMessageListenerContainerOptions
+                                .builder().pollTimeout(Duration.ofMillis(100)).build();
 
-    @Test
-    void testProduce() throws InterruptedException {
-        BlockingQueue<MapRecord<String, String, String>> queue = new LinkedBlockingQueue<>();
-        RecordId messageId = redisTemplate.opsForStream().add("my-stream", Collections.singletonMap("key", "value1"));
-        redisTemplate.opsForStream().createGroup("my-stream", ReadOffset.from(messageId), "my-group");
+                BlockingQueue<MapRecord<String, String, String>> records = new LinkedBlockingQueue<>();
 
-        container.start();
-        Subscription subscription = container.receive(Consumer.from("my-group", "my-consumer"),
-                StreamOffset.create("my-stream", ReadOffset.lastConsumed()), queue::add);
+                StreamMessageListenerContainer<String, MapRecord<String, String, String>> container = StreamMessageListenerContainer
+                                .create(connectionFactory, containerOptions);
 
-        subscription.await(DEFAULT_TIMEOUT);
+                redisTemplate.opsForStream().createGroup("my-stream", "my-group");
 
-        redisTemplate.opsForStream().add("my-stream", Collections.singletonMap("key", "value2"));
+                container.start();
+                Subscription subscription = container.receive(Consumer.from("my-group", "my-consumer"),
+                                StreamOffset.create("my-stream", ReadOffset.lastConsumed()), records::add);
 
-        MapRecord<String, String, String> message = queue.poll(1, TimeUnit.SECONDS);
-        
+                subscription.await(DEFAULT_TIMEOUT);
 
-        log.info("id : {}, key : {}, value : {}", message.getId(), message.getStream(), message.getValue());
+                redisTemplate.opsForStream().add("my-stream", Collections.singletonMap("key", "value1"));
 
-        // redisTemplate.opsForStream().acknowledge("my-group", message);
-    }
+                MapRecord<String, String, String> msg = records.poll(1, TimeUnit.SECONDS);
+                log.info("id : {}, key : {}, value : {}", msg.getId(), msg.getStream(), msg.getValue());
+
+                subscription.cancel();
+        }
 
 }

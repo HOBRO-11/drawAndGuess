@@ -1,5 +1,7 @@
 package com.drawandguess.messagebroker.producer;
 
+import java.time.LocalDateTime;
+
 import java.io.Serializable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -13,7 +15,6 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class TestMockPerson implements Serializable {
 
     @JsonProperty("name")
@@ -22,6 +23,11 @@ public class TestMockPerson implements Serializable {
     private String age;
     @JsonProperty("content")
     private String content;
+    @JsonProperty("createdTime")
+    private LocalDateTime createdTime;
+    @JsonProperty("temp")
+    private String temp;
+    @JsonProperty("status")
+    private String status;
 
-    
 }

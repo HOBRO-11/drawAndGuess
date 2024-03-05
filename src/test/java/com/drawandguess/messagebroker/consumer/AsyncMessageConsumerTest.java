@@ -41,7 +41,6 @@ public class AsyncMessageConsumerTest {
 
     PendingMessageScheduler pendingMessageScheduler = ac.getBean(PendingMessageScheduler.class);
 
-
     @BeforeEach
     void afterEach() throws InterruptedException {
         RedisConnection connection = redisTemplate.getConnectionFactory().getConnection();
@@ -119,7 +118,6 @@ public class AsyncMessageConsumerTest {
                 System.out
                         .println("inputNumber : " + number + " time : " + System.currentTimeMillis() + " thread : "
                                 + Thread.currentThread().getName());
-                // redisTemplate.opsForStream().acknowledge(streamName, consumerGroupName, message.getId());
             } catch (Exception e) {
                 System.out.println("failed to process the message : " + message.getValue().get("number")
                         + " message is " + e.getMessage());
@@ -188,8 +186,8 @@ public class AsyncMessageConsumerTest {
         RedisTemplate<String, String> redisTemplate;
 
         public PendingMessageScheduler(RedisTemplate<String, String> redisTemplate) {
-			this.redisTemplate = redisTemplate;
-		}
+            this.redisTemplate = redisTemplate;
+        }
 
         public void processPendingMessage() {
             consumerName = "u2";

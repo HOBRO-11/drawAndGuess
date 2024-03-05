@@ -2,6 +2,7 @@ package com.drawandguess.messagebroker.producer;
 
 import static org.assertj.core.api.Assertions.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -15,10 +16,12 @@ import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.StreamOffset;
 import org.springframework.data.redis.connection.stream.StreamReadOptions;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 @SpringBootTest
 public class AsyncMessageProducerTest {
@@ -31,21 +34,27 @@ public class AsyncMessageProducerTest {
     @BeforeEach
     void beforeEach() {
         mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        TestCustomRedisSerializer testSerializer = new TestCustomRedisSerializer();
+        StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
 
         redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);
-        redisTemplate.setKeySerializer(new TestCustomStringIntRedisSerializer());
-        redisTemplate.setHashKeySerializer(new TestCustomStringIntRedisSerializer());
-        redisTemplate.setHashValueSerializer(new TestCustomStringIntRedisSerializer());
-        redisTemplate.afterPropertiesSet();
-        new Jackson2JsonRedisSerializer<>(Integer.class);
+        redisTemplate.setKeySerializer(stringRedisSerializer);
+        redisTemplate.setHashKeySerializer(stringRedisSerializer);
 
+        redisTemplate.setHashKeySerializer(testSerializer);
+        redisTemplate.setHashValueSerializer(testSerializer);
+
+        redisTemplate.afterPropertiesSet();
     }
 
     @Test
     void producerCustomSerializerTest_same_Dto() throws JsonProcessingException, InterruptedException {
-
-        TestPerson person = new TestPerson("user1", 10, "10");
+        LocalDateTime now = LocalDateTime.now();
+        TestPerson person = new TestPerson("user1", 10, "10", now, null, TestPersonStatus.ONLINE);
 
         Map<String, Object> map;
         map = mapper.convertValue(person, Map.class);
@@ -62,14 +71,18 @@ public class AsyncMessageProducerTest {
         assertThat(result.getName()).isEqualTo(person.getName());
         assertThat(result.getAge()).isEqualTo(person.getAge());
         assertThat(result.getContent()).isEqualTo(person.getContent());
+        assertThat(result.getCreatedTime()).isEqualTo(now);
+        assertThat(result.getStatus()).isEqualTo(TestPersonStatus.ONLINE);
 
     }
 
     @Test
     void producerCustomSerializerTest_other_Dto() throws JsonProcessingException, InterruptedException {
 
-        String TEST_MOCK_PERSON_AGE = "10";
-        TestPerson person = new TestPerson("user1", 10, "10");
+        final String TEST_MOCK_PERSON_AGE = "10";
+
+        LocalDateTime now = LocalDateTime.now();
+        TestPerson person = new TestPerson("user1", 10, "10", now, null, TestPersonStatus.OFFLINE);
 
         Map<String, Object> map;
         map = mapper.convertValue(person, Map.class);
@@ -89,6 +102,8 @@ public class AsyncMessageProducerTest {
         assertThat(result.getAge()).isNotEqualTo(person.getAge());
         assertThat(result.getAge()).isEqualTo(TEST_MOCK_PERSON_AGE);
         assertThat(result.getContent()).isEqualTo(person.getContent());
+        assertThat(result.getCreatedTime()).isEqualTo(now);
+        assertThat(result.getStatus()).isEqualTo(person.getStatus().name());
 
     }
 

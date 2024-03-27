@@ -1,0 +1,21 @@
+# redis host and port
+'redis-host': localhost
+'redis-port': 6379
+
+# name of the list
+'success-users-key': success-users
+'failure-users-key': failure-users
+
+#  name of the stream
+'waiting-users-stream': waiting-users
+'status-change-users-stream': status-change-users
+'stream-poll-timeout': 500
+
+#  name of the consumer group
+'waiting-users-consumer-group': waiting-users-cg
+'status-change-users-consumer-group': status-change-users-cg
+
+# name of the consumer
+'waiting-users-consumer': waiting-users-manager
+'status-change-users-consumer': status-change-users-manager
+

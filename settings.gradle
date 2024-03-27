@@ -1,1 +1,5 @@
 rootProject.name = 'draw-and-guess'
+include 'drawandguess-common'       
+include 'drawandguess-user'       
+include 'drawandguess-messagebroker'       
+include 'drawandguess-gamemanager'       
